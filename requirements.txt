@@ -5,4 +5,3 @@ shapely
 geopy
 pandas
 numpy
-xml.etree.ElementTree
