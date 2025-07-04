@@ -396,7 +396,12 @@ def create_base_map(location, zoom_start, kml_polygons=None):
     return m
 
 with col1:
-    m = create_base_map(st.session_state.map_location, st.session_state.map_zoom)
+    # Display the map with KML polygons
+    m = create_base_map(
+        st.session_state.map_location, 
+        st.session_state.map_zoom, 
+        st.session_state.kml_polygons if st.session_state.kml_polygons else None
+    )
     output = st_folium(m, width='100%', height=700)
 
 # Rest of the functionality in the second column
