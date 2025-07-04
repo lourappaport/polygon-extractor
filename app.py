@@ -106,6 +106,159 @@ def check_rate_limit():
     
     return True
 
+def parse_kml_file(kml_content):
+    """Parse KML file and extract polygon coordinates"""
+    try:
+        # Parse the KML content
+        root = ET.fromstring(kml_content)
+        
+        # Handle different KML namespace formats
+        namespaces = {
+            'kml': 'http://www.opengis.net/kml/2.2',
+            'kml20': 'http://earth.google.com/kml/2.0',
+            'kml21': 'http://earth.google.com/kml/2.1',
+            'kml22': 'http://earth.google.com/kml/2.2'
+        }
+        
+        polygons = []
+        
+        # Try to find polygons with different namespace approaches
+        for ns_name, ns_uri in namespaces.items():
+            # Look for Polygon elements
+            polygon_elements = root.findall(f".//{{{ns_uri}}}Polygon")
+            if polygon_elements:
+                break
+        else:
+            # If no namespaced elements found, try without namespace
+            polygon_elements = root.findall(".//Polygon")
+        
+        for i, polygon_elem in enumerate(polygon_elements):
+            try:
+                # Find the outer boundary coordinates
+                outer_boundary = None
+                for ns_name, ns_uri in namespaces.items():
+                    outer_boundary = polygon_elem.find(f".//{{{ns_uri}}}outerBoundaryIs//{{{ns_uri}}}coordinates")
+                    if outer_boundary is not None:
+                        break
+                
+                if outer_boundary is None:
+                    # Try without namespace
+                    outer_boundary = polygon_elem.find(".//outerBoundaryIs//coordinates")
+                
+                if outer_boundary is not None and outer_boundary.text:
+                    # Parse coordinates string
+                    coords_text = outer_boundary.text.strip()
+                    coord_pairs = []
+                    
+                    # Split by whitespace and newlines
+                    coords_list = coords_text.replace('\n', ' ').split()
+                    
+                    for coord in coords_list:
+                        coord = coord.strip()
+                        if coord:
+                            parts = coord.split(',')
+                            if len(parts) >= 2:
+                                try:
+                                    lon = float(parts[0])
+                                    lat = float(parts[1])
+                                    coord_pairs.append([lon, lat])
+                                except ValueError:
+                                    continue
+                    
+                    if len(coord_pairs) >= 3:  # Need at least 3 points for a polygon
+                        # Try to find a name for the polygon
+                        name = f"Polygon {i+1}"
+                        name_elem = polygon_elem.find(".//name")
+                        if name_elem is not None and name_elem.text:
+                            name = name_elem.text.strip()
+                        
+                        polygons.append({
+                            'name': name,
+                            'coordinates': coord_pairs,
+                            'id': f"kml_polygon_{i}"
+                        })
+            except Exception as e:
+                st.warning(f"Error parsing polygon {i+1}: {str(e)}")
+                continue
+        
+        return polygons
+    except Exception as e:
+        st.error(f"Error parsing KML file: {str(e)}")
+        return []
+
+def extract_addresses_from_polygon(polygon_coords, grid_size):
+    """Extract addresses from a polygon using the existing logic"""
+    try:
+        polygon = Polygon([(coord[0], coord[1]) for coord in polygon_coords])
+        
+        # Check polygon size
+        is_valid_size, area = check_polygon_size(polygon)
+        if not is_valid_size:
+            return None, f"Selected area is too large ({area:.2f} km²). Please select an area smaller than {MAX_AREA} km²."
+        
+        # Generate grid points
+        min_x, min_y, max_x, max_y = polygon.bounds
+        x_points = np.arange(min_x, max_x, grid_size)
+        y_points = np.arange(min_y, max_y, grid_size)
+        
+        grid_points = []
+        for y in y_points:
+            for x in x_points:
+                if Point(x, y).within(polygon):
+                    grid_points.append((y, x))
+        
+        # Check points limit
+        is_valid_points, point_count = check_points_limit(grid_points)
+        if not is_valid_points:
+            return None, f"Too many points ({point_count}). Please select a smaller area or increase grid size."
+        
+        # Check rate limit
+        if not check_rate_limit():
+            remaining_time = COOLDOWN_MINUTES - (datetime.now() - st.session_state.last_request_time).total_seconds() / 60
+            return None, f"Rate limit exceeded. Please wait {remaining_time:.1f} minutes before trying again."
+        
+        return grid_points, None
+    except Exception as e:
+        return None, f"Error processing polygon: {str(e)}"
+
+def process_kml_polygon_addresses(grid_points, progress_container):
+    """Process grid points to extract addresses with progress tracking"""
+    st.session_state.request_count += 1
+    st.session_state.last_request_time = datetime.now()
+    
+    with progress_container:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        addresses = []
+        seen_addresses = set()
+        
+        for idx, (lat, lon) in enumerate(grid_points):
+            try:
+                location = reverse_geocode_with_retry(lat, lon)
+                
+                if location and location.address not in seen_addresses:
+                    seen_addresses.add(location.address)
+                    address_info = location.raw['address']
+                    addresses.append({
+                        'Latitude': lat,
+                        'Longitude': lon,
+                        'Address': location.address,
+                        'Postal Code': address_info.get('postcode', ''),
+                        'City': address_info.get('city', ''),
+                        'State': address_info.get('state', ''),
+                        'Country': address_info.get('country', '')
+                    })
+                
+                progress = (idx + 1) / len(grid_points)
+                progress_bar.progress(progress)
+                status_text.text(f"Processed {idx + 1}/{len(grid_points)} points")
+                
+            except Exception as e:
+                continue
+    
+    return addresses
+
 def reverse_geocode_with_retry(lat, lon, max_retries=3, initial_delay=1):
     try:
         lat = float(lat)
