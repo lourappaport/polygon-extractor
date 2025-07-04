@@ -321,7 +321,7 @@ with col1:
 
 # Map creation and display
 @st.cache_data
-def create_base_map(location, zoom_start):
+def create_base_map(location, zoom_start, kml_polygons=None):
     m = folium.Map(location=location, zoom_start=zoom_start)
     folium.TileLayer('openstreetmap', name='OpenStreetMap').add_to(m)
     folium.TileLayer(
@@ -329,6 +329,27 @@ def create_base_map(location, zoom_start):
         attr="Esri World Imagery",
         name="Satellite"
     ).add_to(m)
+    
+    # Add KML polygons if provided
+    if kml_polygons:
+        for polygon in kml_polygons:
+            # Convert coordinates to folium format (lat, lon)
+            folium_coords = [[coord[1], coord[0]] for coord in polygon['coordinates']]
+            
+            # Create polygon with click functionality
+            folium.Polygon(
+                locations=folium_coords,
+                color='red',
+                weight=2,
+                fill=True,
+                fillColor='yellow',
+                fillOpacity=0.3,
+                popup=folium.Popup(
+                    f"<b>{polygon['name']}</b><br>Click 'Analyze KML Polygon' to count houses",
+                    max_width=300
+                ),
+                tooltip=f"KML Polygon: {polygon['name']}"
+            ).add_to(m)
     
     draw = folium.plugins.Draw(
         export=True,
