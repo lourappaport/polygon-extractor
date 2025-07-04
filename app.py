@@ -56,6 +56,10 @@ if 'map_location' not in st.session_state:
     st.session_state.map_location = [33.14773, -96.88784]
 if 'map_zoom' not in st.session_state:
     st.session_state.map_zoom = 15
+if 'kml_polygons' not in st.session_state:
+    st.session_state.kml_polygons = []
+if 'selected_polygon_results' not in st.session_state:
+    st.session_state.selected_polygon_results = {}
 
 # Constants
 MAX_AREA = 5.0  # Maximum area in square kilometers
