@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Sample Polygons</name>
+    <description>Sample KML file with polygons for testing</description>
+    
+    <Placemark>
+      <name>Downtown Area</name>
+      <description>Downtown commercial area</description>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              -96.890000,33.148000,0
+              -96.885000,33.148000,0
+              -96.885000,33.145000,0
+              -96.890000,33.145000,0
+              -96.890000,33.148000,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    
+    <Placemark>
+      <name>Residential Zone 1</name>
+      <description>Residential area with houses</description>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              -96.890000,33.150000,0
+              -96.885000,33.150000,0
+              -96.885000,33.152000,0
+              -96.890000,33.152000,0
+              -96.890000,33.150000,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    
+    <Placemark>
+      <name>Residential Zone 2</name>
+      <description>Another residential area</description>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              -96.885000,33.145000,0
+              -96.880000,33.145000,0
+              -96.880000,33.148000,0
+              -96.885000,33.148000,0
+              -96.885000,33.145000,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>
