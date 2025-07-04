@@ -349,7 +349,6 @@ with col1:
             st.error(f"Error searching location: {str(e)}")
 
 # Map creation and display
-@st.cache_data
 def create_base_map(location, zoom_start, kml_polygons=None):
     m = folium.Map(location=location, zoom_start=zoom_start)
     folium.TileLayer('openstreetmap', name='OpenStreetMap').add_to(m)
