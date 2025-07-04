@@ -420,7 +420,82 @@ with col2:
     )
     st.caption("Smaller value = more precise but slower")
     
-    # Process drawn polygon
+    st.divider()
+    
+    # KML Polygon Analysis Section
+    if st.session_state.kml_polygons:
+        st.subheader("🏠 KML Polygon Analysis")
+        
+        # Select polygon to analyze
+        polygon_options = {f"{p['name']} (ID: {p['id']})": p for p in st.session_state.kml_polygons}
+        selected_polygon_display = st.selectbox(
+            "Select polygon to analyze:",
+            options=list(polygon_options.keys()),
+            key="polygon_selector"
+        )
+        
+        if st.button("Analyze KML Polygon", type="primary", key="analyze_kml"):
+            selected_polygon = polygon_options[selected_polygon_display]
+            polygon_id = selected_polygon['id']
+            
+            # Extract addresses from the selected polygon
+            grid_points, error = extract_addresses_from_polygon(selected_polygon['coordinates'], grid_size)
+            
+            if error:
+                st.error(error)
+            else:
+                st.info(f"Processing {len(grid_points)} points in {selected_polygon['name']}...")
+                
+                # Create progress container
+                progress_container = st.container()
+                
+                # Process addresses
+                addresses = process_kml_polygon_addresses(grid_points, progress_container)
+                
+                # Store results
+                st.session_state.selected_polygon_results[polygon_id] = {
+                    'polygon_name': selected_polygon['name'],
+                    'addresses': addresses,
+                    'house_count': len(addresses)
+                }
+                
+                # Clear progress container
+                progress_container.empty()
+                
+                if addresses:
+                    st.success(f"🏠 **{len(addresses)} houses found** in {selected_polygon['name']}")
+                else:
+                    st.warning("No addresses found in this polygon")
+        
+        # Display results for previously analyzed polygons
+        st.divider()
+        st.subheader("📊 Analysis Results")
+        
+        if st.session_state.selected_polygon_results:
+            for polygon_id, result in st.session_state.selected_polygon_results.items():
+                with st.expander(f"🏠 {result['polygon_name']} - {result['house_count']} houses"):
+                    if result['addresses']:
+                        df = pd.DataFrame(result['addresses'])
+                        st.dataframe(df, height=300)
+                        
+                        # Download button
+                        csv = df.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            f"⬇️ Download {result['polygon_name']} Results",
+                            csv,
+                            f"{result['polygon_name']}_addresses.csv",
+                            "text/csv",
+                            key=f'download-{polygon_id}'
+                        )
+                    else:
+                        st.info("No addresses found")
+        else:
+            st.info("No polygon analysis results yet. Select and analyze a KML polygon above.")
+    
+    st.divider()
+    
+    # Process drawn polygon (existing functionality)
+    st.subheader("✏️ Draw Polygon Analysis")
     if output is not None and 'all_drawings' in output and output['all_drawings']:
         try:
             clear_expired_cache()
