@@ -299,11 +299,40 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.title("Polygon Address Extractor")
     st.markdown("""
-        Search for a location, then draw a polygon to extract addresses within that area.
-        Use the drawing tools in the top right corner of the map.
+        **Two ways to analyze areas:**
+        1. **Upload KML file** - Click on polygons to count houses
+        2. **Draw polygon** - Use drawing tools to create custom areas
     """)
-
+    
+    # KML file upload section
+    st.subheader("📁 Upload KML File")
+    uploaded_file = st.file_uploader("Choose a KML file", type=['kml'])
+    
+    if uploaded_file is not None:
+        try:
+            # Read the uploaded file
+            kml_content = uploaded_file.read()
+            
+            # Parse KML
+            polygons = parse_kml_file(kml_content)
+            
+            if polygons:
+                st.session_state.kml_polygons = polygons
+                st.success(f"✅ Successfully loaded {len(polygons)} polygons from KML file")
+                
+                # Show polygon list
+                polygon_names = [f"{p['name']} (ID: {p['id']})" for p in polygons]
+                st.info(f"Polygons loaded: {', '.join(polygon_names[:5])}" + 
+                       (f" and {len(polygon_names)-5} more..." if len(polygon_names) > 5 else ""))
+            else:
+                st.error("No polygons found in the uploaded KML file")
+        except Exception as e:
+            st.error(f"Error processing KML file: {str(e)}")
+    
+    st.divider()
+    
     # Location search
+    st.subheader("🔍 Search Location")
     search_location = st.text_input("Search location (e.g., city, address, landmark)", "")
     
     if st.button("Search", key="search_button"):
