@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Test Polygons</name>
+    <description>Generated test polygons for KML functionality testing</description>
+    
+    <Placemark>
+      <name>Dallas Residential Area</name>
+      <description>Small residential area in Dallas</description>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              -96.89,33.148,0
+              -96.885,33.148,0
+              -96.885,33.145,0
+              -96.89,33.145,0
+              -96.89,33.148,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>
